@@ -2,6 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const mongoose = require('mongoose')
 const dotenv = require('dotenv')
+const register = require('./routes/register')
 
 const app = express()
 
@@ -15,6 +16,8 @@ app.get('/api/health', (req, res) => {
     console.log(error)
   }
 })
+
+app.use('/api/v1/users', register)
 
 app.listen(process.env.PORT, async () => {
   try {
