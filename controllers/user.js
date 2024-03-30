@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 const User = require('../models/user')
 
 const fetchUsers = async (req, res) => {
@@ -40,7 +41,6 @@ const registerUser = async (req, res) => {
 
     res.send({ message: 'The user was added successfully to the database' })
   } catch (error) {
-    // console.log(error);
     res.send({
       message: 'There was an error in adding the user to the database',
     })
@@ -48,29 +48,43 @@ const registerUser = async (req, res) => {
 }
 
 const loginUser = async (req, res) => {
-  const { email, password } = req.body
+  try {
+    const { email, password } = req.body
 
-  const checkUser = await User.findOne({ email: email })
+    const checkUser = await User.findOne({ email: email })
 
-  if (!checkUser) {
+    if (!checkUser) {
+      res.send({
+        message: "User doesn't exist. Please register the user",
+      })
+    }
+
+    let checkPass = await bcrypt.compare(password, checkUser?.password)
+
+    if (!checkPass) {
+      res.send({
+        message: 'Invalid credentials.',
+      })
+    }
+
+    const token = jwt.sign(
+      { userID: checkUser?._id, userName: checkUser?.name },
+      process.env.JWT_SECRET_CODE,
+      { expiresIn: '1 minute' }
+    )
+
+    res.json({
+      message: 'User has been logged in successfully',
+      token,
+      name: checkUser?.name,
+      email: checkUser?.email,
+    })
+  } catch (error) {
     res.send({
-      message: "User doesn't exist. Please register the user",
+      message:
+        'Problem logging in. Please check your credentials then try again.',
     })
   }
-
-  let checkPass = await bcrypt.compare(password, checkUser?.password)
-
-  if (!checkPass) {
-    res.send({
-      message: 'Invalid credentials.',
-    })
-  }
-
-  res.json({
-    message: 'User has been logged in successfully',
-    name: checkUser?.name,
-    email: checkUser?.email
-  })
 }
 
 module.exports = { fetchUsers, registerUser, loginUser }
